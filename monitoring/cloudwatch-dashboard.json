@@ -1,0 +1,44 @@
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ECS",
+            "CPUUtilization",
+            "ServiceName",
+            "arshit-8byte-svc",
+            "ClusterName",
+            "arshit-8byte-cluster"
+          ]
+        ],
+        "region": "ap-south-1",
+        "title": "ECS CPU"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ApplicationELB",
+            "RequestCount",
+            "LoadBalancer",
+            "app/arshit-8byte-alb"
+          ]
+        ],
+        "region": "ap-south-1",
+        "title": "ALB Requests"
+      }
+    }
+  ]
+}
