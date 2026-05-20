@@ -50,4 +50,4 @@ Backup Strategy: RDS automated backups (7 days), S3 versioned Terraform state
 ```
 Challenges Faced
 
-See docs/CHALLENGES.md [blocked] for 5 real issues and resolutions
+See docs/CHALLENGES.md for 5 real issues and resolutions
