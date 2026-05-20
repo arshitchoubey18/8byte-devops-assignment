@@ -1,20 +1,53 @@
 # 8byte DevOps Assignment
 
-**Live:** http://arshit-8byte-alb-595835421.us-east-1.elb.amazonaws.com
+**Live Demo (Lab Environment):** http://arshit-8byte-alb-595835421.us-east-1.elb.amazonaws.com  
+*Note: AWS Academy lab - auto-terminates after 4 hours. Screenshots attached in submission email.*
 
-## Part 1 - Infrastructure ✅
-- VPC (10.0.0.0/16) with public/private subnets across 2 AZs
-- ECS Fargate, ALB, RDS PostgreSQL, ECR
-- Terraform with S3 backend
+## Architecture Overview
+- **Compute:** ECS Fargate (serverless containers)
+- **Network:** VPC 10.0.0.0/16 with 2 public + 2 private subnets across us-east-1a/b
+- **Database:** RDS PostgreSQL 15 in private subnets
+- **Load Balancer:** Application Load Balancer
+- **Registry:** ECR
+- **IaC:** Terraform with S3 backend
 
-## Part 2 - CI/CD ✅
-GitHub Actions: PR tests → build → Trivy scan → ECR push → ECS deploy (staging auto, prod manual)
+## Part 1 - Infrastructure Provisioning ✅
+- VPC, ECS Fargate, ALB, RDS PostgreSQL, ECR
+- Security groups with least-privilege
+- Terraform state in S3 with DynamoDB locking
 
-## Part 3 - Monitoring ✅
-CloudWatch dashboard: `monitoring/cloudwatch-dashboard.json`
+```
+cd terraform
+terraform init
+terraform apply -var="db_password=YourSecurePass123"
+```
+Part 2 - Deployment Automation ✅
 
-## Security
-- RDS private, SSM SecureString, least-privilege IAM, SG isolation
+GitHub Actions: .github/workflows/ci-cd.yml
+```
+PR → pytest tests
+Merge → Build → Trivy scan → Push ECR → Deploy ECS
+Staging: auto | Production: manual approval
+Part 3 - Monitoring and Logging ✅
+Dashboard: monitoring/cloudwatch-dashboard.json
+Metrics: ECS CPU/Memory, ALB RequestCount/Latency, RDS Connections
+Logs: CloudWatch Logs (/ecs/8byte-app)
+```
+Part 4 - Best Practices
+```
+Security:
 
-## Challenges
-See docs/CHALLENGES.md
+RDS private only, SSM SecureString for secrets, SG isolation, IAM least-privilege, Trivy scanning
+
+Cost Optimization:
+
+Fargate (no idle EC2), db.t3.micro, 7-day backups, single NAT for dev
+
+Secret Management: AWS SSM Parameter Store
+
+Backup Strategy: RDS automated backups (7 days), S3 versioned Terraform state
+
+```
+Challenges Faced
+
+See docs/CHALLENGES.md [blocked] for 5 real issues and resolutions
