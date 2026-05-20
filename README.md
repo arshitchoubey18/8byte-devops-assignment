@@ -1,31 +1,20 @@
-# 8Byte.ai DevOps Assignment
+# 8byte DevOps Assignment
 
-End-to-end DevOps setup on AWS using Terraform, ECS Fargate, RDS Postgres, and GitHub Actions.
+**Live:** http://arshit-8byte-alb-595835421.us-east-1.elb.amazonaws.com
 
-## Architecture
-- VPC with 2 public + 2 private subnets across ap-south-1a/b
-- Application Load Balancer -> ECS Fargate (Flask app)
-- RDS PostgreSQL in private subnets
-- ECR for Docker images
-- CloudWatch Logs + Metrics
-- Secrets in SSM Parameter Store
+## Part 1 - Infrastructure ✅
+- VPC (10.0.0.0/16) with public/private subnets across 2 AZs
+- ECS Fargate, ALB, RDS PostgreSQL, ECR
+- Terraform with S3 backend
 
-## Setup
-1. Create S3 bucket for Terraform state
-2. `cd terraform`
-3. `terraform init -backend-config="bucket=YOUR_BUCKET" -backend-config="key=devops/terraform.tfstate" -backend-config="region=ap-south-1"`
-4. `terraform apply -var="db_password=StrongPass123!"`
+## Part 2 - CI/CD ✅
+GitHub Actions: PR tests → build → Trivy scan → ECR push → ECS deploy (staging auto, prod manual)
 
-## CI/CD
-- PR: runs tests + Trivy fs scan
-- Push to main: builds Docker, pushes to ECR, scans image, deploys to staging
-- Production: manual approval in GitHub Environments
+## Part 3 - Monitoring ✅
+CloudWatch dashboard: `monitoring/cloudwatch-dashboard.json`
 
 ## Security
-- RDS not public, only ECS SG allowed
-- Secrets via SSM SecureString, not in code
-- IAM least privilege for task execution
-- ECR image scanning enabled
+- RDS private, SSM SecureString, least-privilege IAM, SG isolation
 
-## Cost Optimization
-- t3.micro RDS, Fargate 0.25vCPU, single NAT, 7-day log retention
+## Challenges
+See docs/CHALLENGES.md
