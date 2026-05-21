@@ -21,19 +21,22 @@ cd terraform
 terraform init
 terraform apply -var="db_password=YourSecurePass123"
 ```
-Part 2 - Deployment Automation ✅
+## Part 2 - Deployment Automation ✅
 
 GitHub Actions: .github/workflows/ci-cd.yml
 ```
 PR → pytest tests
 Merge → Build → Trivy scan → Push ECR → Deploy ECS
 Staging: auto | Production: manual approval
-Part 3 - Monitoring and Logging ✅
+```
+
+## Part 3 - Monitoring and Logging ✅
+```
 Dashboard: monitoring/cloudwatch-dashboard.json
 Metrics: ECS CPU/Memory, ALB RequestCount/Latency, RDS Connections
 Logs: CloudWatch Logs (/ecs/8byte-app)
 ```
-Part 4 - Best Practices
+## Part 4 - Best Practices
 ```
 Security:
 
