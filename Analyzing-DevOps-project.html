@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8Byte DevOps Assignment — Full AWS Replay Runbook</title>
+<meta name="theme-color" content="#2563eb">
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --muted: #475569;
+    --border: #e2e8f0;
+    --accent: #2563eb;
+    --accent-2: #1e40af;
+    --accent-soft: #dbeafe;
+    --code-bg: #0b1020;
+    --code-text: #e2e8f0;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.07);
+    --radius: 16px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --sans: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  }
+  [data-theme="dark"] {
+    --bg: #020617;
+    --surface: #0f172a;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #1e293b;
+    --accent: #3b82f6;
+    --accent-2: #60a5fa;
+    --accent-soft: #1e3a8a33;
+    --code-bg: #020617;
+    --code-text: #cbd5e1;
+    --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #020617;
+      --surface: #0f172a;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #1e293b;
+      --accent: #3b82f6;
+      --accent-2: #60a5fa;
+      --accent-soft: #1e3a8a33;
+      --code-bg: #020617;
+      --code-text: #cbd5e1;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .app-header {
+    position: sticky; top: 0; z-index: 40;
+    backdrop-filter: saturate(180%) blur(12px);
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-inner {
+    max-width: 1200px; margin: 0 auto; padding: 14px 20px;
+    display: flex; align-items: center; gap: 16px; justify-content: space-between;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    display: grid; place-items: center; color: white; font-weight: 700;
+    box-shadow: var(--shadow);
+  }
+  .title-wrap h1 { font-size: 18px; margin: 0; line-height: 1.2; letter-spacing: -0.01em; }
+  .title-wrap p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+  .actions { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    padding: 8px 12px; border-radius: 10px; font-size: 13px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; transition: all .2s;
+  }
+  .btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn.primary:hover { background: var(--accent-2); }
+  .progress {
+    height: 3px; background: var(--border); position: relative; overflow: hidden;
+  }
+  .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), #7c3aed); transition: width .3s; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px 80px; }
+  .layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+  .toc {
+    position: sticky; top: 76px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow);
+  }
+  .toc h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .toc a { display: block; padding: 8px 10px; border-radius: 8px; color: var(--muted); font-size: 14px; }
+  .toc a:hover, .toc a.active { background: var(--accent-soft); color: var(--accent-2); text-decoration: none; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 22px; box-shadow: var(--shadow); margin-bottom: 18px;
+  }
+  .card h2 {
+    display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-size: 22px; letter-spacing: -0.01em;
+  }
+  .step {
+    width: 28px; height: 28px; border-radius: 8px; background: var(--accent-soft); color: var(--accent-2);
+    display: grid; place-items: center; font-weight: 700; font-size: 14px; border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+  }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+  .badge { font-size: 12px; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); }
+  .badge.blue { background: var(--accent-soft); color: var(--accent-2); border-color: color-mix(in srgb, var(--accent) 30%, var(--border)); }
+  .checklist { display: grid; gap: 8px; margin: 12px 0; }
+  .check {
+    display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px dashed var(--border);
+    border-radius: 12px; background: color-mix(in srgb, var(--surface) 80%, var(--bg));
+  }
+  .check input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent); flex: 0 0 auto; }
+  .check label { cursor: pointer; }
+  .check small { color: var(--muted); display: block; }
+  pre {
+    position: relative; background: var(--code-bg); color: var(--code-text);
+    border: 1px solid #0b1220; border-radius: 14px; padding: 14px 14px 16px;
+    overflow: auto; margin: 12px 0; box-shadow: var(--shadow);
+  }
+  code, pre code { font-family: var(--mono); font-size: 13.5px; line-height: 1.6; }
+  .copy {
+    position: absolute; top: 8px; right: 8px; font-size: 12px; padding: 6px 8px;
+    border-radius: 8px; border: 1px solid #1f2937; background: #111827; color: #cbd5e1; cursor: pointer; opacity: .9;
+  }
+  .copy:hover { opacity: 1; transform: translateY(-1px); }
+  [data-theme="light"] .copy { background: #0f172a; border-color: #0b1220; }
+  .callout {
+    border-left: 4px solid var(--accent); background: var(--accent-soft);
+    padding: 12px 14px; border-radius: 10px; margin: 12px 0; color: var(--text);
+  }
+  .callout.warning { border-left-color: var(--warning); background: color-mix(in srgb, var(--warning) 12%, var(--surface)); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; overflow: hidden; border-radius: 12px; border: 1px solid var(--border); }
+  th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  th { background: color-mix(in srgb, var(--surface) 60%, var(--bg)); font-weight: 600; color: var(--muted); }
+  tr:last-child td { border-bottom: none; }
+  kbd { font-family: var(--mono); background: var(--bg); border: 1px solid var(--border); border-bottom-width: 2px; padding: 2px 6px; border-radius: 6px; font-size: 12px; }
+  .footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 30px; }
+  @media print {
+    .app-header, .toc, .actions, .copy, .progress { display: none !important; }
+    body { background: white; }
+    .container { padding: 0; }
+    .card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+    a { color: #000; text-decoration: underline; }
+    pre { background: #f6f8fa !important; color: #111 !important; border: 1px solid #ddd; }
+  }
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">8B</div>
+      <div class="title-wrap">
+        <h1>8Byte DevOps Assignment — Full AWS Replay Runbook</h1>
+        <p>Option A • ECS Fargate + ALB + RDS + Terraform + GitHub Actions</p>
+      </div>
+    <div class="actions no-print">
+      <button class="btn" id="themeToggle" title="Toggle theme">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        Theme
+      </button>
+      <button class="btn" id="resetChecks">Reset</button>
+      <button class="btn primary" onclick="window.print()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
+        Print / PDF
+      </button>
+    </div>
+  </div>
+  <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+</header>
+
+<div class="container">
+  <div class="layout">
+    <aside class="toc no-print">
+      <h3>Contents</h3>
+      <a href="#overview">1. Overview</a>
+      <a href="#prerequisites">2. Prerequisites</a>
+      <a href="#step0">3. Step 0 — Clone</a>
+      <a href="#step1">4. Step 1 — AWS Configure</a>
+      <a href="#step2">5. Step 2 — Terraform Backend</a>
+      <a href="#step3">6. Step 3 — Deploy Infra</a>
+      <a href="#step4">7. Step 4 — Outputs</a>
+      <a href="#step5">8. Step 5 — Build & Push</a>
+      <a href="#step6">9. Step 6 — Deploy to ECS</a>
+      <a href="#step7">10. Step 7 — Verify</a>
+      <a href="#step8">11. Step 8 — GitHub Actions</a>
+      <a href="#step9">12. Step 9 — Monitoring</a>
+      <a href="#cleanup">13. Cleanup</a>    </aside>
+
+    <main>
+      <section id="overview" class="card">
+        <h2><span class="step">1</span> Overview</h2>
+        <p>Full AWS replay of the <strong>8byte-devops-assignment</strong> using production-grade patterns: ECS Fargate behind an Application Load Balancer, RDS Postgres, infrastructure as code with Terraform, and CI/CD via GitHub Actions.</p>
+        <div class="badges">
+          <span class="badge blue">15 min setup</span>
+          <span class="badge blue">~$2 demo cost</span>
+          <span class="badge">ECS Fargate</span>
+          <span class="badge">ALB</span>
+          <span class="badge">RDS Postgres</span>
+          <span class="badge">Terraform</span>
+          <span class="badge">GitHub Actions</span>
+        </div>
+        <p>Repo: <a href="https://github.com/arshitchoubey18/8byte-devops-assignment" target="_blank" rel="noopener">github.com/arshitchoubey18/8byte-devops-assignment</a></p>
+        <div class="checklist">
+          <div class="check"><input type="checkbox" data-id="ov-1" id="ov-1"><label for="ov-1">Understand target architecture (Fargate service → ALB → Internet, RDS private)</label></div>
+        </div>
+      </section>
+
+      <section id="prerequisites" class="card">
+        <h2><span class="step">2</span> Prerequisites</h2>
+        <div class="grid-2">
+          <div class="checklist">
+            <div class="check"><input type="checkbox" data-id="pre-1" id="pre-1"><label for="pre-1">AWS Account with <strong>IAM user (AdministratorAccess)</strong><small>Access Key + Secret ready</small></label></div>
+            <div class="check"><input type="checkbox" data-id="pre-2" id="pre-2"><label for="pre-2">AWS CLI v2 installed<small>Run: aws --version</small></label></div>
+            <div class="check"><input type="checkbox" data-id="pre-3" id="pre-3"><label for="pre-3">Terraform 1.6+ installed<small>Run: terraform -version</small></label></div>
+          </div>
+          <div class="checklist">
+            <div class="check"><input type="checkbox" data-id="pre-4" id="pre-4"><label for="pre-4">Docker Desktop installed & running</label></div>
+            <div class="check"><input type="checkbox" data-id="pre-5" id="pre-5"><label for="pre-5">Git installed</label></div>
+            <div class="check"><input type="checkbox" data-id="pre-6" id="pre-6"><label for="pre-6">GitHub account (for Actions)</label></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="step0" class="card">
+        <h2><span class="step">3</span> Step 0 — Clone and Explore</h2>
+        <pre><button class="copy">Copy</button><code>git clone https://github.com/arshitchoubey18/8byte-devops-assignment.git
+cd 8byte-devops-assignment
+ls -la</code></pre>
+        <div class="checklist">
+          <div class="check"><input type="checkbox" data-id="s0-1" id="s0-1"><label for="s0-1">Repo cloned and opened</label></div>
+        </div>
+      </section>
+
+      <section id="step1" class="card">
+        <h2><span class="step">4</span> Step 1 — Configure AWS</h2>
+        <pre><button class="copy">Copy</button><code>aws configure
+# AWS Access Key ID: ************
+# AWS Secret Access Key: ************
+# Default region name: us-east-1
+# Default output format: json
+
+aws sts get-caller-identity</code></pre>
+        <div class="checklist">
+          <div class="check"><input type="checkbox" data-id="s1-1" id="s1-1"><label for="s1-1">Credentials configured and identity verified</label></div>
+        </div>
+      </section>
+
+      <section id="step2" class="card">
+        <h2><span class="step">5</span> Step 2 — Prepare Terraform (Critical)</h2>
+        <div class="callout warning"><strong>Backend issue:</strong> The repo defaults to an S3 backend that doesn't exist in your account. For a fast demo, switch to local backend.</div>
+        <h4>Option A — Quick Local Backend (Recommended for demo)</h4>
+        <p>Edit <code>terraform/backend.tf</code> to:</p>
+        <pre><button class="copy">Copy</button><code>terraform {
+  backend "local" {
+    path = "terraform.tfstate"
+  }
+}</code></pre>
+        <h4>Option B — Keep S3 Backend</h4>
+        <pre><button class="copy">Copy</button><code>aws s3api create-bucket --bucket 8byte-tf-state-$(date +%s) --region us-east-1
+# Then update backend.tf with your bucket name</code></pre>
+        <p>Initialize:</p>
+        <pre><button class="copy">Copy</button><code>cd terraform
+terraform init -reconfigure</code></pre>
+        <div class="checklist">
+          <div class="check"><input type="checkbox" data-id="s2-1" id="s2-1"><label for="s2-1">Backend configured</label></div>
+          <div class="check"><input type="checkbox" data-id="s2-2" id="s2-2"><label for="s2-2">terraform init succeeded</label></div>
+        </div>
+      </section>
+
+      <section id="step3" class="card">
+        <h2><span class="step">6</span> Step 3 — Deploy Infrastructure</h2>
+        <pre><button class="copy">Copy</button><code>terraform plan -var="db_password=DemoPass123!"
+terraform apply -var="db_password=DemoPass123!" -auto-approve</code></pre>
+        <div class="callout"><strong>Note:</strong> RDS Postgres takes 8–10 minutes. Use this time to explain architecture.</div>
+        <div class="checklist">
+          <div class="check"><input type="checkbox" data-id="s3-1" id="s3-1"><label for="s3-1">terraform apply completed successfully</label></div>
+        </div>
+      </section>
+
+      <section id="step4" class="card">
+        <h2><span class="step">7</span> Step 4 — Get Outputs</h2>
+        <pre><button class="copy">Copy</button><code>terraform output</code></pre>
+        <p>Expected outputs:</p>
+        <ul>
+          <li><code>alb_dns_name</code> — public URL</li>
+          <li><code>ecr_repository_url</code> — for docker push</li>
+          <li><code>ecs_cluster</code></li>
+          <li><code>ecs_service</code></li>
+          <li><code>rds_endpoint</code></li>
+        </ul>
+        <div class="checklist">
+          <div class="check"><input type="checkbox" data-id="s4-1" id="s4-1"><label for="s4-1">Saved all outputs</label></div>
+        </div>
+      </section>
+
+      <section id="step5" class="card">
+        <h2><span class="step">8</span> Step 5 — Build and Push Docker Image</h2>
+        <pre><button class="copy">Copy</button><code>export AWS_REGION=us-east-1
+export ECR_URL=$(terraform output -raw ecr_repository_url)
+
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
+
+docker build -t 8byte-app:latest .
+docker tag 8byte-app:latest $ECR_URL:latest
+docker push $ECR_URL:latest</code></pre>
+        <div class="callout">If Dockerfile is in a subfolder (e.g., <code>./app</code>), adjust: <code>docker build -t 8byte-app:latest ./app</code></div>
+        <div class="checklist">
+          <div class="check"><input type="checkbox" data-id="s5-1" id="s5-1"><label for="s5-1">Image pushed to ECR</label></div>
+        </div>
+      </section>
+
+      <section id="step6" class="card">
+        <h2><span class="step">9</span> Step 6 — Deploy to ECS</h2>
+        <pre><button class="copy">Copy</button><code>aws ecs update-service \
+  --cluster $(terraform output -raw ecs_cluster) \
+  --service $(terraform output -raw ecs_service) \
+  --force-new-deployment \
+  --region $AWS_REGION</code></pre>
+        <div class="checklist">
+          <div class="check"><input type="checkbox" data-id="s6-1" id="s6-1"><label for="s6-1">ECS service updating</label></div>
+        </div>
+      </section>
+
+      <section id="step7" class="card">
+        <h2><span class="step">10</span> Step 7 — Verify Live</h2>
+        <pre><button class="copy">Copy</button><code># Open in browser
+echo "http://$(terraform output -raw alb_dns_name)"
+
+# macOS:
+open http://$(terraform output -raw alb_dns_name)
+# Linux:
+xdg-open http://$(terraform output -raw alb_dns_name)</code></pre>
+        <pre><button class="copy">Copy</button><code>aws logs tail /ecs/8byte-app --follow --since 5m --region $AWS_REGION</code></pre>
+        <div class="checklist">
+          <div class="check"><input type="checkbox" data-id="s7-1" id="s7-1"><label for="s7-1">ALB returns 200 OK</label></div>
+          <div class="check"><input type="checkbox" data-id="s7-2" id="s7-2"><label for="s7-2">Logs show healthy startup</label></div>
+        </div>
+      </section>
+
+      <section id="step8" class="card">
+        <h2><span class="step">11</span> Step 8 — Wire GitHub Actions (Optional Live Demo)</h2>
+        <p>Add repository secrets: <strong>Settings → Secrets and variables → Actions</strong></p>
+        <ul>
+          <li><code>AWS_ACCESS_KEY_ID</code></li>
+          <li><code>AWS_SECRET_ACCESS_KEY</code></li>
+          <li><code>AWS_REGION</code> = us-east-1</li>
+          <li><code>ECR_REPOSITORY</code> = (from terraform output)</li>
+        </ul>
+        <pre><button class="copy">Copy</button><code>git add .
+git commit -m "chore: trigger deploy"
+git push origin main</code></pre>
+        <div class="checklist">
+          <div class="check"><input type="checkbox" data-id="s8-1" id="s8-1"><label for="s8-1">Workflow triggered and succeeded</label></div>
+        </div>
+      </section>
+
+      <section id="step9" class="card">
+        <h2><span class="step">12</span> Step 9 — Show Monitoring</h2>
+        <p>Navigate: AWS Console → CloudWatch → Dashboards → <code>8byte-app-dashboard</code></p>
+        <ul>
+          <li>ECS: CPUUtilization, MemoryUtilization</li>
+          <li>ALB: TargetResponseTime, HTTP 5xx</li>
+          <li>RDS: CPUUtilization, DatabaseConnections</li>
+        </ul>
+        <div class="checklist">
+          <div class="check"><input type="checkbox" data-id="s9-1" id="s9-1"><label for="s9-1">Dashboard showing metrics</label></div>
+        </div>
+      </section>
+
+      <section id="cleanup" class="card">
+        <h2><span class="step">13</span> Cleanup</h2>
+        <pre><button class="copy">Copy</button><code>terraform destroy -var="db_password=DemoPass123!" -auto-approve</code></pre>
+        <div class="checklist">
+          <div class="check"><input type="checkbox" data-id="cl-1" id="cl-1"><label for="cl-1">All resources destroyed (verify in console)</label></div>
+        </div>
+      </section>
+
+      
+
+      <div class="footer">Prepared for Arshit Choubey • May 2026 • 8Byte DevOps Assignment</div>
+    </main>
+  </div>
+</div>
+
+<script>
+  // Theme toggle
+  const root = document.documentElement;
+  const savedTheme = localStorage.getItem('8byte-theme');
+  if (savedTheme) root.setAttribute('data-theme', savedTheme);
+  else if (window.matchMedia('(prefers-color-scheme: dark)').matches) root.setAttribute('data-theme', 'dark');
+  
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const current = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', current);
+    localStorage.setItem('8byte-theme', current);
+  });
+
+  // Copy buttons
+  document.querySelectorAll('pre').forEach(pre => {
+    const btn = pre.querySelector('.copy');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      const code = pre.querySelector('code').innerText;
+      try {
+        await navigator.clipboard.writeText(code);
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 1200);
+      } catch(e) {
+        btn.textContent = 'Error';
+      }
+    });
+  });
+
+  // Checkboxes + progress
+  const checks = Array.from(document.querySelectorAll('input[type="checkbox"][data-id]'));
+  const progressBar = document.getElementById('progressBar');
+  
+  function updateProgress() {
+    const total = checks.length;
+    const done = checks.filter(c => c.checked).length;
+    const pct = total ? Math.round((done/total)*100) : 0;
+    progressBar.style.width = pct + '%';
+    document.title = pct === 100 ? '✓ Runbook Complete — 8Byte' : '8Byte DevOps Assignment — Full AWS Replay Runbook';
+  }
+  
+  checks.forEach(cb => {
+    const key = '8byte-' + cb.dataset.id;
+    cb.checked = localStorage.getItem(key) === '1';
+    cb.addEventListener('change', () => {
+      localStorage.setItem(key, cb.checked ? '1' : '0');
+      updateProgress();
+    });
+  });
+  
+  document.getElementById('resetChecks').addEventListener('click', () => {
+    checks.forEach(cb => {
+      localStorage.removeItem('8byte-' + cb.dataset.id);
+      cb.checked = false;
+    });
+    updateProgress();
+  });
+  
+  updateProgress();
+
+  // TOC active state
+  const tocLinks = Array.from(document.querySelectorAll('.toc a'));
+  const sections = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      const id = '#' + entry.target.id;
+      const link = tocLinks.find(l => l.getAttribute('href') === id);
+      if (entry.isIntersecting) {
+        tocLinks.forEach(l => l.classList.remove('active'));
+        link && link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
