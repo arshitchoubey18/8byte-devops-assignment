@@ -37,6 +37,7 @@ Metrics: ECS CPU/Memory, ALB RequestCount/Latency, RDS Connections
 Logs: CloudWatch Logs (/ecs/8byte-app)
 ```
 ## Part 4 - Best Practices
+- Small documentation update for test commit
 ```
 Security:
 
