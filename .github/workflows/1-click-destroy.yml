@@ -1,22 +1,30 @@
 name: 1-Click Destroy
-on:
-  workflow_dispatch:
-
+on: workflow_dispatch
 jobs:
   destroy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
       - uses: hashicorp/setup-terraform@v3
-      - working-directory: terraform
+      
+      - name: Empty ECR
         run: |
-          terraform init \
-            -backend-config="bucket=${{ secrets.TF_BUCKET }}" \
-            -backend-config="key=8byte/terraform.tfstate" \
-            -backend-config="region=${{ secrets.AWS_REGION }}" \
-            -backend-config="dynamodb_table=8byte-tf-lock"
+          ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+          aws ecr list-images --repository-name arshit-8byte-app --region ${{ secrets.AWS_REGION }} --query 'imageIds[*]' --output json > images.json || true
+          if [ -s images.json ]; then aws ecr batch-delete-image --repository-name arshit-8byte-app --region ${{ secrets.AWS_REGION }} --image-ids file://images.json || true; fi
+
+      - name: Terraform Destroy
+        working-directory: terraform
+        run: |
+          terraform init -backend-config="bucket=${{ secrets.TF_BUCKET }}" -backend-config="key=8byte/terraform.tfstate" -backend-config="region=${{ secrets.AWS_REGION }}" -backend-config="dynamodb_table=8byte-tf-lock"
           terraform destroy -auto-approve -var="db_password=${{ secrets.DB_PASSWORD }}"
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+
+      - name: Cleanup Backend
+        run: |
+          aws s3 rb s3://${{ secrets.TF_BUCKET }} --force || true
+          aws dynamodb delete-table --table-name 8byte-tf-lock --region ${{ secrets.AWS_REGION }} || true
