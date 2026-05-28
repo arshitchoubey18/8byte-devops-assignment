@@ -10,21 +10,21 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-      - uses: hashicorp/setup-terraform@v3
-      
-      - name: Empty ECR
+
+      - name: Set bucket name
         run: |
           ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
-          aws ecr list-images --repository-name arshit-8byte-app --region ${{ secrets.AWS_REGION }} --query 'imageIds[*]' --output json > images.json || true
-          if [ -s images.json ]; then aws ecr batch-delete-image --repository-name arshit-8byte-app --region ${{ secrets.AWS_REGION }} --image-ids file://images.json || true; fi
+          echo "BUCKET=8byte-tf-state-$ACCOUNT" >> $GITHUB_ENV
 
+      - uses: hashicorp/setup-terraform@v3
       - name: Terraform Destroy
         working-directory: terraform
         run: |
-          terraform init -backend-config="bucket=${{ secrets.TF_BUCKET }}" -backend-config="key=8byte/terraform.tfstate" -backend-config="region=${{ secrets.AWS_REGION }}" -backend-config="dynamodb_table=8byte-tf-lock"
-          terraform destroy -auto-approve -var="db_password=${{ secrets.DB_PASSWORD }}"
+          terraform init -backend-config="bucket=$BUCKET" -backend-config="key=8byte/terraform.tfstate" -backend-config="region=${{ secrets.AWS_REGION }}" -backend-config="dynamodb_table=8byte-tf-lock"
+          terraform destroy -auto-approve -var="db_password=dummy"
 
-      - name: Cleanup Backend
+      - name: Cleanup
         run: |
-          aws s3 rb s3://${{ secrets.TF_BUCKET }} --force || true
+          aws s3 rb s3://$BUCKET --force || true
           aws dynamodb delete-table --table-name 8byte-tf-lock --region ${{ secrets.AWS_REGION }} || true
+          aws ecr delete-repository --repository-name arshit-8byte-app --force --region ${{ secrets.AWS_REGION }} || true
