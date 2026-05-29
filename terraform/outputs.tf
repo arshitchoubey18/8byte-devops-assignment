@@ -1,6 +1,24 @@
+# Lookup existing resources by name — avoids "undeclared resource" errors
+data "aws_lb" "main" {
+  name = "arshit-8byte-alb"
+}
+
+data "aws_lb_target_group" "tg" {
+  name = "arshit-8byte-tg"
+}
+
+data "aws_ecs_cluster" "cluster" {
+  cluster_name = "arshit-8byte-cluster"
+}
+
+data "aws_ecs_service" "service" {
+  cluster_arn  = data.aws_ecs_cluster.cluster.arn
+  service_name = "arshit-8byte-svc"
+}
+
 output "alb_dns_name" {
   description = "ALB DNS name"
-  value       = aws_lb.main.dns_name
+  value       = data.aws_lb.main.dns_name
 }
 
 output "ecr_repository_url" {
@@ -15,15 +33,15 @@ output "rds_endpoint" {
 
 output "target_group_arn" {
   description = "ALB Target Group ARN"
-  value       = aws_lb_target_group.main.arn
+  value       = data.aws_lb_target_group.tg.arn
 }
 
 output "cluster_name" {
   description = "ECS cluster name"
-  value       = aws_ecs_cluster.main.name
+  value       = data.aws_ecs_cluster.cluster.cluster_name
 }
 
 output "service_name" {
   description = "ECS service name"
-  value       = aws_ecs_service.app.name
+  value       = data.aws_ecs_service.service.service_name
 }
