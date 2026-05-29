@@ -1,24 +1,9 @@
-# Lookup existing resources by name — avoids "undeclared resource" errors
-data "aws_lb" "main" {
-  name = "arshit-8byte-alb"
-}
-
-data "aws_lb_target_group" "tg" {
-  name = "arshit-8byte-tg"
-}
-
-data "aws_ecs_cluster" "cluster" {
-  cluster_name = "arshit-8byte-cluster"
-}
-
-data "aws_ecs_service" "service" {
-  cluster_arn  = data.aws_ecs_cluster.cluster.arn
-  service_name = "arshit-8byte-svc"
-}
+# outputs.tf — fixed for first-time 1-click deploy
+# No data sources — we use the resources created by this plan
 
 output "alb_dns_name" {
   description = "ALB DNS name"
-  value       = data.aws_lb.main.dns_name
+  value       = aws_lb.main.dns_name
 }
 
 output "ecr_repository_url" {
@@ -33,15 +18,15 @@ output "rds_endpoint" {
 
 output "target_group_arn" {
   description = "ALB Target Group ARN"
-  value       = data.aws_lb_target_group.tg.arn
+  value       = aws_lb_target_group.app.arn
 }
 
 output "cluster_name" {
   description = "ECS cluster name"
-  value       = data.aws_ecs_cluster.cluster.cluster_name
+  value       = aws_ecs_cluster.main.name
 }
 
 output "service_name" {
   description = "ECS service name"
-  value       = data.aws_ecs_service.service.service_name
+  value       = aws_ecs_service.app.name
 }
