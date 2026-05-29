@@ -47,7 +47,7 @@ jobs:
           ECR=$ACCOUNT.dkr.ecr.$REGION.amazonaws.com/arshit-8byte-app
           aws ecr describe-repositories --repository-names arshit-8byte-app --region $REGION || aws ecr create-repository --repository-name arshit-8byte-app --region $REGION
           aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT.dkr.ecr.$REGION.amazonaws.com
-          docker build -t arshit-8byte-app:${{ github.sha }}.
+          docker build -t arshit-8byte-app:${{ github.sha }} .
           docker tag arshit-8byte-app:${{ github.sha }} $ECR:latest
           docker tag arshit-8byte-app:${{ github.sha }} $ECR:${{ github.sha }}
           docker push $ECR:latest
@@ -55,6 +55,7 @@ jobs:
           aws ecs update-service --cluster arshit-8byte-cluster --service arshit-8byte-svc --force-new-deployment --region $REGION
 
       - name: Post-deploy stabilization
+        id: stabilize
         working-directory: terraform
         run: |
           set -e
@@ -62,9 +63,10 @@ jobs:
           CLUSTER="arshit-8byte-cluster"
           SERVICE="arshit-8byte-svc"
 
-          # Prefer terraform outputs, fallback to names
           TG_ARN=$(terraform output -raw target_group_arn 2>/dev/null || aws elbv2 describe-target-groups --names arshit-8byte-tg --region $REGION --query 'TargetGroups[0].TargetGroupArn' --output text)
           ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null || aws elbv2 describe-load-balancers --names arshit-8byte-alb --region $REGION --query 'LoadBalancers[0].DNSName' --output text)
+          
+          echo "alb_dns=$ALB_DNS" >> $GITHUB_OUTPUT
 
           echo "⏳ Waiting for ECS service to be stable..."
           aws ecs wait services-stable --cluster $CLUSTER --services $SERVICE --region $REGION
@@ -84,3 +86,20 @@ jobs:
           done
           echo "❌ App did not become healthy"
           exit 1
+
+      - name: Deployment Summary
+        run: |
+          ALB="${{ steps.stabilize.outputs.alb_dns }}"
+          echo ""
+          echo "🚀 Deployment complete!"
+          echo "Open this link: http://$ALB"
+          echo ""
+          {
+            echo "### ✅ Deployment Complete"
+            echo ""
+            echo "Your app is now live."
+            echo ""
+            echo "**URL:** http://$ALB"
+            echo ""
+            echo "[👉 Click here to open the app](http://$ALB)"
+          } >> $GITHUB_STEP_SUMMARY
